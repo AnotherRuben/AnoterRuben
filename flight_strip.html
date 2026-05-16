@@ -462,7 +462,7 @@ function parseSimbriefData(sb) {
               || sb.aircraft?.icaocode || sb.aircraft?.name || '---';
 
   // Callsign & airline — lookup happens async after parse
-  const icaoAirline = (g.icao_airline || '').toUpperCase();
+  const icaoAirline = (g.icao_airline || "")?.toUpperCase?.();
   const flightNum   = g.flight_number || '';
   const callsign    = icaoAirline + flightNum || '---';
   // airlineInfo filled in after async lookup (see fetchSimbrief)
