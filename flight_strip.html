@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Flight Strip</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Share+Tech+Mono&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@300;400;600;700&display=swap');
 
   :root {
     --bg: #0a0c10;
@@ -25,7 +25,7 @@
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: var(--bg); color: var(--text); font-family: 'Atkinson Hyperlegible', sans-serif; min-height: 100vh; display: flex; flex-direction: column; }
+  body { background: var(--bg); color: var(--text); font-family: 'Barlow Condensed', sans-serif; min-height: 100vh; display: flex; flex-direction: column; }
 
   /* ── Header ── */
   header { border-bottom: 1px solid var(--border); padding: 14px 26px; display: flex; align-items: center; gap: 13px; background: var(--panel); }
@@ -49,6 +49,9 @@
   .btn-sb { background: var(--simbrief); color: #fff; border: none; border-radius: 6px; padding: 12px; font-family: 'Barlow Condensed', sans-serif; font-size: 14px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; cursor: pointer; width: 100%; transition: opacity 0.2s; margin-top: 5px; }
   .btn-sb:hover:not(:disabled) { opacity: 0.85; }
   .btn-sb:disabled { opacity: 0.35; cursor: not-allowed; }
+  .consent-row { display: flex; align-items: center; gap: 7px; margin-top: 8px; cursor: pointer; font-size: 12px; color: var(--muted); user-select: none; }
+  .consent-row input[type=checkbox] { width: 15px; height: 15px; accent-color: var(--accent); cursor: pointer; flex-shrink: 0; }
+  .consent-row:hover { color: var(--text); }
   .sb-hint { font-size: 11px; color: var(--muted); line-height: 1.6; padding: 8px 10px; background: rgba(26,110,245,0.06); border: 1px solid rgba(26,110,245,0.2); border-radius: 6px; }
 
   .unit-toggle { display: flex; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
@@ -158,10 +161,14 @@
   <div>
     <div class="section-label">01 · SimBrief</div>
     <div style="margin-bottom:5px;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted)">Pilot ID or Username</div>
-    <input class="sb-input" id="sbInput" type="text" placeholder="e.g. 123456 or johndoe" oninput="savePref('sbInput',this.value)">
+    <input class="sb-input" id="sbInput" type="text" placeholder="e.g. 123456 or johndoe" oninput="onSbInput(this.value)">
+    <label class="consent-row">
+      <input type="checkbox" id="sbRemember" onchange="onRememberToggle(this.checked)">
+      <span>Remember my ID on this device</span>
+    </label>
     <button class="btn-sb" id="sbFetchBtn" onclick="fetchSimbrief()">FETCH LATEST OFP</button>
     <div class="loading-bar" id="loadingBar"></div>
-    <div class="sb-hint" style="margin-top:8px">Numeric = Pilot ID &middot; Text = Username<br>Find your Pilot ID: SimBrief &rarr; Account<br><span style="color:var(--accent);font-size:10px">&#128274; Your ID/username is never saved (GDPR)</span></div>
+    <div class="sb-hint" style="margin-top:8px">Numeric = Pilot ID &middot; Text = Username<br>Find your Pilot ID: SimBrief &rarr; Account<br><span id="gdprNote" style="color:var(--accent);font-size:10px">&#128274; Your ID is not saved unless you opt in</span></div>
   </div>
 
   <div>
@@ -249,10 +256,29 @@ let rawData     = null;
 //  PERSISTENCE
 // ════════════════════════════════════
 function savePref(key, val) {
-  // GDPR: never persist the SimBrief ID/username in browser storage
-  if (key === 'sbInput') return;
   const p = loadPrefs(); p[key] = val;
   localStorage.setItem(LS_PREF, JSON.stringify(p));
+}
+
+// ── SimBrief ID consent handling ──
+// The ID is only ever stored if the user explicitly opts in via the checkbox.
+function onSbInput(val) {
+  // Only persist the ID if the remember box is currently ticked
+  if (G('sbRemember') && G('sbRemember').checked) {
+    savePref('sbInput', val);
+  }
+}
+function onRememberToggle(checked) {
+  savePref('sbRemember', checked ? '1' : '');
+  if (checked) {
+    // Save whatever's currently typed
+    savePref('sbInput', G('sbInput').value);
+    G('gdprNote').innerHTML = '&#128275; Your ID is saved on this device only';
+  } else {
+    // Opt-out: wipe any stored ID immediately
+    const p = loadPrefs(); delete p.sbInput; localStorage.setItem(LS_PREF, JSON.stringify(p));
+    G('gdprNote').innerHTML = '&#128274; Your ID is not saved unless you opt in';
+  }
 }
 function loadPrefs() {
   try { return JSON.parse(localStorage.getItem(LS_PREF) || '{}'); } catch { return {}; }
@@ -305,8 +331,13 @@ function flashSave() {
 // ════════════════════════════════════
 window.addEventListener('DOMContentLoaded', () => {
   const prefs = loadPrefs();
-  // GDPR: SimBrief ID is intentionally not restored from storage
-  if (prefs.unit)    setUnit(prefs.unit, false);
+  if (prefs.unit) setUnit(prefs.unit, false);
+  // Restore SimBrief ID only if the user previously opted in
+  if (prefs.sbRemember === '1') {
+    G('sbRemember').checked = true;
+    if (prefs.sbInput) G('sbInput').value = prefs.sbInput;
+    G('gdprNote').innerHTML = '&#128275; Your ID is saved on this device only';
+  }
 
   const saved = loadStripState();
   if (saved) {
@@ -380,6 +411,18 @@ function parseSimbriefData(sb) {
   const zfwKg   = parseFloat(wts.est_zfw)    || 0;
   const lawKg   = parseFloat(wts.est_ldw)    || 0;
   const blockKg = parseFloat(fuel.plan_ramp) || parseFloat(fuel.totalfuel) || 0;
+
+  // Combined minimum reserve = contingency + alternate + final reserve + ETOPS + extra
+  // (this equals planned fuel-over-destination / plan_landing)
+  const fContingency = parseFloat(fuel.contingency    || 0);
+  const fAlternate   = parseFloat(fuel.alternate_burn || 0);
+  const fReserve     = parseFloat(fuel.reserve        || 0);
+  const fEtops       = parseFloat(fuel.etops          || 0);
+  const fExtra       = parseFloat(fuel.extra          || 0);
+  const reserveKg    = fContingency + fAlternate + fReserve + fEtops + fExtra;
+  // keep components for tooltip / breakdown
+  const reserveParts = { contingency: fContingency, alternate: fAlternate,
+                         reserve: fReserve, etops: fEtops, extra: fExtra };
   const pax     = parseInt(wts.pax_count_actual || wts.pax_count || 0);
   const cargoKg = parseFloat(wts.cargo || wts.payload || 0);
 
@@ -462,7 +505,7 @@ function parseSimbriefData(sb) {
               || sb.aircraft?.icaocode || sb.aircraft?.name || '---';
 
   // Callsign & airline — lookup happens async after parse
-  const icaoAirline = (g.icao_airline || "")?.toUpperCase?.();
+  const icaoAirline = (g.icao_airline || '').toUpperCase();
   const flightNum   = g.flight_number || '';
   const callsign    = icaoAirline + flightNum || '---';
   // airlineInfo filled in after async lookup (see fetchSimbrief)
@@ -484,7 +527,7 @@ function parseSimbriefData(sb) {
 
   return {
     callsign, acType, dep: org.icao_code || '---', dest: dst.icao_code || '---',
-    zfwKg, lawKg, blockKg, pax, cargoKg,
+    zfwKg, lawKg, blockKg, reserveKg, reserveParts, pax, cargoKg,
     blockTime, timeOut, timeOff, timeOn, timeIn,
     route: routeClean, depRwy, sid, star,
     altn: altnIcao, ci: g.costindex || '---',
@@ -549,6 +592,7 @@ function updateWeightDisplay() {
   set('wZfw',   fmtWt(rawData.zfwKg));
   set('wBlock', fmtWt(rawData.blockKg));
   set('wLaw',   fmtWt(rawData.lawKg));
+  set('wRsv',   fmtWt(rawData.reserveKg));
   set('wCargo', fmtWtShort(rawData.cargoKg));
 }
 
@@ -591,6 +635,7 @@ function buildStrip(d) {
     <span class="strip-label">ZFW:</span><span class="strip-value" id="wZfw">${fmtWt(d.zfwKg)}</span>
     <span class="strip-label" style="margin-left:14px">BLOCK:</span><span class="strip-value" id="wBlock">${fmtWt(d.blockKg)}</span>
     <span class="strip-label" style="margin-left:14px">LWT:</span><span class="strip-value" id="wLaw">${fmtWt(d.lawKg)}</span>
+    <span class="strip-label" style="margin-left:14px" title="Contingency + Alternate + Final Reserve + ETOPS + Extra">RSV:</span><span class="strip-value" id="wRsv" title="CONT ${fmtWt(d.reserveParts.contingency)} + ALTN ${fmtWt(d.reserveParts.alternate)} + FINRES ${fmtWt(d.reserveParts.reserve)} + ETOPS ${fmtWt(d.reserveParts.etops)} + EXTRA ${fmtWt(d.reserveParts.extra)}">${fmtWt(d.reserveKg)}</span>
   </div>
 
   <!-- ── P/C · CI · Block time · Initial Alt ── -->
@@ -675,18 +720,22 @@ function buildStrip(d) {
 
   <hr class="strip-sep">
 
-  <!-- ── DEP / ARR / ALT ── -->
-  <div class="strip-row">
-    <span class="strip-label" style="width:30px;flex-shrink:0">DEP:</span>
-    <input id="fDepWx" class="sf xw" placeholder="dep wx / notes..." oninput="autoSave()">
+  <!-- ── DEP / ARR / ALT weather ── -->
+  <div class="strip-row" style="justify-content:space-between">
+    <span class="strip-label">WEATHER</span>
+    <button class="btn-add-step" id="wxBtn" style="margin-top:0;padding:3px 10px" onclick="fetchWeather()">&#127782; FETCH METAR/TAF</button>
   </div>
-  <div class="strip-row">
-    <span class="strip-label" style="width:30px;flex-shrink:0">ARR:</span>
-    <input id="fArrWx" class="sf xw" placeholder="arr wx / notes..." oninput="autoSave()">
+  <div class="strip-row" style="align-items:flex-start">
+    <span class="strip-label" style="width:34px;flex-shrink:0;padding-top:4px">DEP:<br><span style="font-size:10px;opacity:0.6" id="lblDep">${esc(d.dep)}</span></span>
+    <textarea id="fDepWx" class="sf ta ta-sm xw" placeholder="dep wx / notes..." oninput="autoSave()"></textarea>
   </div>
-  <div class="strip-row">
-    <span class="strip-label" style="width:30px;flex-shrink:0">ALT:</span>
-    <input id="fAltWx" class="sf xw" value="${esc(d.altn)}" placeholder="alternate..." oninput="autoSave()">
+  <div class="strip-row" style="align-items:flex-start">
+    <span class="strip-label" style="width:34px;flex-shrink:0;padding-top:4px">ARR:<br><span style="font-size:10px;opacity:0.6" id="lblArr">${esc(d.dest)}</span></span>
+    <textarea id="fArrWx" class="sf ta ta-sm xw" placeholder="arr wx / notes..." oninput="autoSave()"></textarea>
+  </div>
+  <div class="strip-row" style="align-items:flex-start">
+    <span class="strip-label" style="width:34px;flex-shrink:0;padding-top:4px">ALT:<br><span style="font-size:10px;opacity:0.6" id="lblAlt">${esc(d.altn)}</span></span>
+    <textarea id="fAltWx" class="sf ta ta-sm xw" placeholder="alternate wx / notes..." oninput="autoSave()"></textarea>
   </div>
 
   <hr class="strip-sep">
@@ -783,7 +832,7 @@ function copyStrip() {
   const txt = [
     `| Flight ${d.callsign} | Type ${d.acType} | Route ${d.dep} - ${d.dest} | ${d.airlineName}`,
     '',SEP,
-    `ZFW: ${fmtWt(d.zfwKg)}    BLOCK: ${fmtWt(d.blockKg)}    LWT: ${fmtWt(d.lawKg)}`,
+    `ZFW: ${fmtWt(d.zfwKg)}    BLOCK: ${fmtWt(d.blockKg)}    LWT: ${fmtWt(d.lawKg)}    RSV: ${fmtWt(d.reserveKg)}`,
     `P/C: ${d.pax}/${fmtWtShort(d.cargoKg)}    CI/M: ${d.ci}    BLOCK: ${d.blockTime}    INIT ALT: ${get('fInitAlt')}`,
     SEP,
     `OUT: ${get('fTimeOut')}    OFF: ${get('fTimeOff')}    ON: ${get('fTimeOn')}    IN: ${get('fTimeIn')}`,
@@ -857,6 +906,66 @@ function clearAll() {
   G('copyBtn').style.display  = 'none';
   G('printBtn').style.display = 'none';
   log('warn','Cleared.');
+}
+
+// ════════════════════════════════════
+//  METAR / TAF FETCH (NOAA Aviation Weather Center)
+// ════════════════════════════════════
+// Official FAA/NWS source — free, no API key. Falls back to a CORS proxy
+// if the browser blocks the direct request.
+async function fetchOne(icao, type) {
+  // type: 'metar' or 'taf'
+  if (!icao || icao === '---') return '';
+  const base = `https://aviationweather.gov/api/data/${type}?ids=${encodeURIComponent(icao)}&format=raw`;
+  const tryUrls = [
+    base,
+    'https://corsproxy.io/?url=' + encodeURIComponent(base),
+    'https://api.allorigins.win/raw?url=' + encodeURIComponent(base),
+  ];
+  for (const url of tryUrls) {
+    try {
+      const r = await fetch(url);
+      if (!r.ok) continue;
+      const txt = (await r.text()).trim();
+      if (txt && !txt.startsWith('<')) return txt;  // skip HTML error pages
+    } catch(e) { /* try next */ }
+  }
+  return '';
+}
+
+async function fetchWeather() {
+  if (!rawData) return;
+  const btn = G('wxBtn');
+  btn.disabled = true; btn.textContent = 'FETCHING...';
+  log('ok', 'Fetching METAR/TAF from Aviation Weather Center...');
+
+  const targets = [
+    { icao: rawData.dep,  field: 'fDepWx', name: 'DEP' },
+    { icao: rawData.dest, field: 'fArrWx', name: 'ARR' },
+    { icao: rawData.altn, field: 'fAltWx', name: 'ALT' },
+  ];
+
+  let anyOk = false;
+  for (const t of targets) {
+    if (!t.icao || t.icao === '---') continue;
+    const [metar, taf] = await Promise.all([ fetchOne(t.icao, 'metar'), fetchOne(t.icao, 'taf') ]);
+    let block = '';
+    if (metar) block += metar;
+    if (taf)   block += (block ? '\n\n' : '') + taf;
+    if (block) {
+      // Preserve any existing alternate ICAO note for ALT field
+      G(t.field).value = block;
+      anyOk = true;
+      log('ok', `${t.name} ${t.icao}: ${metar ? 'METAR' : ''}${metar && taf ? '+' : ''}${taf ? 'TAF' : ''} loaded`);
+    } else {
+      log('warn', `${t.name} ${t.icao}: no data returned`);
+    }
+  }
+
+  if (anyOk) { saveStripState(); }
+  else { log('err', 'No weather data — the source may be unreachable or CORS-blocked.'); }
+
+  btn.disabled = false; btn.textContent = '\u{1F326} FETCH METAR/TAF';
 }
 
 // ════════════════════════════════════
