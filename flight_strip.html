@@ -172,7 +172,23 @@
   </div>
 
   <div>
-    <div class="section-label">02 · Weight Units</div>
+    <div class="section-label">02 · CheckWX API <span style="opacity:0.5">(optional)</span></div>
+    <div style="margin-bottom:5px;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted)">API Key</div>
+    <div style="position:relative">
+      <input class="sb-input" id="cwxKey" type="password" placeholder="paste CheckWX key (optional)"
+             autocomplete="off" oninput="onCwxInput(this.value)" style="padding-right:42px">
+      <button id="cwxToggle" onclick="toggleCwxVisibility()" title="Show/hide"
+        style="position:absolute;right:6px;top:50%;transform:translateY(-50%);background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:4px">&#128065;</button>
+    </div>
+    <label class="consent-row">
+      <input type="checkbox" id="cwxRemember" onchange="onCwxRememberToggle(this.checked)">
+      <span>Remember my API key on this device</span>
+    </label>
+    <div class="sb-hint" style="margin-top:8px">Adds a third weather source with global METAR+TAF.<br>Free key at <span style="color:var(--accent)">checkwxapi.com</span><br><span id="cwxNote" style="color:var(--accent);font-size:10px">&#128274; Your key is not saved unless you opt in</span></div>
+  </div>
+
+  <div>
+    <div class="section-label">03 · Weight Units</div>
     <div class="unit-toggle">
       <button class="unit-btn active" id="unitT"  onclick="setUnit('T')">TONNES</button>
       <button class="unit-btn"        id="unitKG" onclick="setUnit('KG')">KG</button>
@@ -181,7 +197,7 @@
   </div>
 
   <div>
-    <div class="section-label">03 · Generate</div>
+    <div class="section-label">04 · Generate</div>
     <button class="btn-generate" id="generateBtn" disabled>GENERATE STRIP</button>
   </div>
 
@@ -280,6 +296,27 @@ function onRememberToggle(checked) {
     G('gdprNote').innerHTML = '&#128274; Your ID is not saved unless you opt in';
   }
 }
+
+// ── CheckWX API key consent handling (same opt-in model) ──
+function onCwxInput(val) {
+  if (G('cwxRemember') && G('cwxRemember').checked) {
+    savePref('cwxKey', val);
+  }
+}
+function onCwxRememberToggle(checked) {
+  savePref('cwxRemember', checked ? '1' : '');
+  if (checked) {
+    savePref('cwxKey', G('cwxKey').value);
+    G('cwxNote').innerHTML = '&#128275; Your key is saved on this device only';
+  } else {
+    const p = loadPrefs(); delete p.cwxKey; localStorage.setItem(LS_PREF, JSON.stringify(p));
+    G('cwxNote').innerHTML = '&#128274; Your key is not saved unless you opt in';
+  }
+}
+function toggleCwxVisibility() {
+  const el = G('cwxKey');
+  el.type = (el.type === 'password') ? 'text' : 'password';
+}
 function loadPrefs() {
   try { return JSON.parse(localStorage.getItem(LS_PREF) || '{}'); } catch { return {}; }
 }
@@ -337,6 +374,12 @@ window.addEventListener('DOMContentLoaded', () => {
     G('sbRemember').checked = true;
     if (prefs.sbInput) G('sbInput').value = prefs.sbInput;
     G('gdprNote').innerHTML = '&#128275; Your ID is saved on this device only';
+  }
+  // Restore CheckWX key only if the user previously opted in
+  if (prefs.cwxRemember === '1') {
+    G('cwxRemember').checked = true;
+    if (prefs.cwxKey) G('cwxKey').value = prefs.cwxKey;
+    G('cwxNote').innerHTML = '&#128275; Your key is saved on this device only';
   }
 
   const saved = loadStripState();
@@ -909,27 +952,79 @@ function clearAll() {
 }
 
 // ════════════════════════════════════
-//  METAR / TAF FETCH (NOAA Aviation Weather Center)
+//  METAR / TAF FETCH
 // ════════════════════════════════════
-// Official FAA/NWS source — free, no API key. Falls back to a CORS proxy
-// if the browser blocks the direct request.
-async function fetchOne(icao, type) {
-  // type: 'metar' or 'taf'
-  if (!icao || icao === '---') return '';
-  const base = `https://aviationweather.gov/api/data/${type}?ids=${encodeURIComponent(icao)}&format=raw`;
-  const tryUrls = [
-    base,
-    'https://corsproxy.io/?url=' + encodeURIComponent(base),
-    'https://api.allorigins.win/raw?url=' + encodeURIComponent(base),
+// Primary: NOAA Aviation Weather Center (official, global but patchy outside US).
+// Fallback for METAR: VATSIM (metar.vatsim.net) — matches the network weather.
+// Optional 3rd source: CheckWX (user-supplied API key) — global metar + taf.
+// Each result is validated to actually start with the requested ICAO, because
+// the AWC API sometimes returns a default station (e.g. KMCI) instead of empty.
+
+function validMetar(txt, icao) {
+  if (!txt) return '';
+  const clean = txt.trim();
+  if (!clean || clean.startsWith('<')) return '';          // HTML error page
+  if (/No\s+METAR|No\s+TAF|not\s+found/i.test(clean)) return '';
+  // Must contain the requested ICAO as a token (guards against KMCI fallback)
+  const re = new RegExp('\\b' + icao + '\\b');
+  if (!re.test(clean)) return '';
+  return clean;
+}
+
+async function tryFetch(url) {
+  const proxies = [
+    url,
+    'https://corsproxy.io/?url=' + encodeURIComponent(url),
+    'https://api.allorigins.win/raw?url=' + encodeURIComponent(url),
   ];
-  for (const url of tryUrls) {
+  for (const u of proxies) {
     try {
-      const r = await fetch(url);
+      const r = await fetch(u);
       if (!r.ok) continue;
       const txt = (await r.text()).trim();
-      if (txt && !txt.startsWith('<')) return txt;  // skip HTML error pages
-    } catch(e) { /* try next */ }
+      if (txt) return txt;
+    } catch(e) { /* next */ }
   }
+  return '';
+}
+
+// CheckWX returns JSON and needs the key in an X-API-Key header.
+// Endpoint: /metar/{ICAO} or /taf/{ICAO}, with /decoded omitted for raw text.
+async function fetchCheckWx(icao, type, key) {
+  if (!key) return '';
+  const url = `https://api.checkwx.com/${type}/${encodeURIComponent(icao)}`;
+  try {
+    const r = await fetch(url, { headers: { 'X-API-Key': key } });
+    if (!r.ok) return '';
+    const j = await r.json();
+    // data is an array of raw report strings
+    const raw = Array.isArray(j.data) && j.data.length ? j.data[0] : '';
+    return validMetar(typeof raw === 'string' ? raw : (raw.raw_text || ''), icao);
+  } catch(e) { return ''; }
+}
+
+async function fetchOne(icao, type) {
+  if (!icao || icao === '---') return '';
+
+  // 1. Try AWC (handles both metar + taf)
+  const awcUrl = `https://aviationweather.gov/api/data/${type}?ids=${encodeURIComponent(icao)}&format=raw`;
+  let txt = validMetar(await tryFetch(awcUrl), icao);
+  if (txt) return txt;
+
+  // 2. METAR-only fallback: VATSIM network weather
+  if (type === 'metar') {
+    const vatUrl = `https://metar.vatsim.net/${encodeURIComponent(icao)}`;
+    txt = validMetar(await tryFetch(vatUrl), icao);
+    if (txt) return txt;
+  }
+
+  // 3. CheckWX fallback (if user supplied an API key) — covers metar + taf globally
+  const cwxKey = (G('cwxKey') && G('cwxKey').value.trim()) || '';
+  if (cwxKey) {
+    txt = await fetchCheckWx(icao, type, cwxKey);
+    if (txt) return txt;
+  }
+
   return '';
 }
 
