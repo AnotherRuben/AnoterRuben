@@ -2,8 +2,18 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Flight Strip</title>
+
+<!-- ── iOS "Add to Home Screen" support ── -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Flight Strip">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0a0c10">
+<link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxODAiIGhlaWdodD0iMTgwIiB2aWV3Qm94PSIwIDAgMTgwIDE4MCI+CiAgPGRlZnM+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImJnIiB4MT0iMCIgeTE9IjAiIHgyPSIxIiB5Mj0iMSI+CiAgICAgIDxzdG9wIG9mZnNldD0iMCIgc3RvcC1jb2xvcj0iIzBkMWExNCIvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiMwYTBjMTAiLz4KICAgIDwvbGluZWFyR3JhZGllbnQ+CiAgPC9kZWZzPgogIDxyZWN0IHdpZHRoPSIxODAiIGhlaWdodD0iMTgwIiByeD0iNDAiIGZpbGw9InVybCgjYmcpIi8+CiAgPHJlY3QgeD0iOCIgeT0iOCIgd2lkdGg9IjE2NCIgaGVpZ2h0PSIxNjQiIHJ4PSIzNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDBkNGFhIiBzdHJva2Utd2lkdGg9IjIiIG9wYWNpdHk9IjAuMzUiLz4KICA8IS0tIHN0cmlwIGxpbmVzIC0tPgogIDxnIHN0cm9rZT0iIzAwZDRhYSIgc3Ryb2tlLXdpZHRoPSIzIiBvcGFjaXR5PSIwLjI1IiBzdHJva2UtbGluZWNhcD0icm91bmQiPgogICAgPGxpbmUgeDE9IjQwIiB5MT0iMTE4IiB4Mj0iMTQwIiB5Mj0iMTE4Ii8+CiAgICA8bGluZSB4MT0iNDAiIHkxPSIxMzIiIHgyPSIxMjAiIHkyPSIxMzIiLz4KICAgIDxsaW5lIHgxPSI0MCIgeTE9IjE0NiIgeDI9IjEzMiIgeTI9IjE0NiIvPgogIDwvZz4KICA8IS0tIHBsYW5lIC0tPgogIDxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKDkwIDc0KSByb3RhdGUoNDUpIj4KICAgIDxwYXRoIGQ9Ik0wLC0zNCBDNCwtMzQgNiwtMjQgNiwtMTQgTDI2LDIgTDI2LDEwIEw2LDIgTDYsMjAgTDE0LDI4IEwxNCwzNCBMMCwyOSBMLTE0LDM0IEwtMTQsMjggTC02LDIwIEwtNiwyIEwtMjYsMTAgTC0yNiwyIEwtNiwtMTQgQy02LC0yNCAtNCwtMzQgMCwtMzQgWiIKICAgICAgZmlsbD0iIzAwZDRhYSIvPgogIDwvZz4KPC9zdmc+">
+<link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxODAiIGhlaWdodD0iMTgwIiB2aWV3Qm94PSIwIDAgMTgwIDE4MCI+CiAgPGRlZnM+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImJnIiB4MT0iMCIgeTE9IjAiIHgyPSIxIiB5Mj0iMSI+CiAgICAgIDxzdG9wIG9mZnNldD0iMCIgc3RvcC1jb2xvcj0iIzBkMWExNCIvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiMwYTBjMTAiLz4KICAgIDwvbGluZWFyR3JhZGllbnQ+CiAgPC9kZWZzPgogIDxyZWN0IHdpZHRoPSIxODAiIGhlaWdodD0iMTgwIiByeD0iNDAiIGZpbGw9InVybCgjYmcpIi8+CiAgPHJlY3QgeD0iOCIgeT0iOCIgd2lkdGg9IjE2NCIgaGVpZ2h0PSIxNjQiIHJ4PSIzNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDBkNGFhIiBzdHJva2Utd2lkdGg9IjIiIG9wYWNpdHk9IjAuMzUiLz4KICA8IS0tIHN0cmlwIGxpbmVzIC0tPgogIDxnIHN0cm9rZT0iIzAwZDRhYSIgc3Ryb2tlLXdpZHRoPSIzIiBvcGFjaXR5PSIwLjI1IiBzdHJva2UtbGluZWNhcD0icm91bmQiPgogICAgPGxpbmUgeDE9IjQwIiB5MT0iMTE4IiB4Mj0iMTQwIiB5Mj0iMTE4Ii8+CiAgICA8bGluZSB4MT0iNDAiIHkxPSIxMzIiIHgyPSIxMjAiIHkyPSIxMzIiLz4KICAgIDxsaW5lIHgxPSI0MCIgeTE9IjE0NiIgeDI9IjEzMiIgeTI9IjE0NiIvPgogIDwvZz4KICA8IS0tIHBsYW5lIC0tPgogIDxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKDkwIDc0KSByb3RhdGUoNDUpIj4KICAgIDxwYXRoIGQ9Ik0wLC0zNCBDNCwtMzQgNiwtMjQgNiwtMTQgTDI2LDIgTDI2LDEwIEw2LDIgTDYsMjAgTDE0LDI4IEwxNCwzNCBMMCwyOSBMLTE0LDM0IEwtMTQsMjggTC02LDIwIEwtNiwyIEwtMjYsMTAgTC0yNiwyIEwtNiwtMTQgQy02LC0yNCAtNCwtMzQgMCwtMzQgWiIKICAgICAgZmlsbD0iIzAwZDRhYSIvPgogIDwvZz4KPC9zdmc+">
+<link rel="manifest" href="./manifest.webmanifest">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@300;400;600;700&display=swap');
 
@@ -28,7 +38,7 @@
   body { background: var(--bg); color: var(--text); font-family: 'Barlow Condensed', sans-serif; min-height: 100vh; display: flex; flex-direction: column; }
 
   /* ── Header ── */
-  header { border-bottom: 1px solid var(--border); padding: 14px 26px; display: flex; align-items: center; gap: 13px; background: var(--panel); }
+  header { border-bottom: 1px solid var(--border); padding: 14px 26px; padding-top: max(14px, env(safe-area-inset-top)); display: flex; align-items: center; gap: 13px; background: var(--panel); }
   .logo-mark { width: 32px; height: 32px; border: 2px solid var(--accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: 'Share Tech Mono', monospace; font-size: 11px; color: var(--accent); flex-shrink: 0; }
   header h1 { font-size: 19px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; }
   header h1 span { color: var(--accent); }
@@ -386,9 +396,14 @@ window.addEventListener('DOMContentLoaded', () => {
   if (saved) {
     rawData = saved.rawData;
     if (saved.unit) setUnit(saved.unit, false);
-    buildStrip(rawData);
+    buildStrip(rawData, true);   // skip auto step rows; we restore them next
     restoreFields(saved.fields);
-    restoreSteps(saved.steps);
+    // Restore saved steps, or fall back to a single blank row
+    if (saved.steps && saved.steps.length) {
+      restoreSteps(saved.steps);
+    } else {
+      addStepRow();
+    }
     G('generateBtn').disabled = false;
     log('ok', 'Restored previous strip from browser storage.');
     // Re-resolve airline in case table has been updated
@@ -652,7 +667,7 @@ G('generateBtn').addEventListener('click', () => {
 // ════════════════════════════════════
 //  STRIP BUILDER
 // ════════════════════════════════════
-function buildStrip(d) {
+function buildStrip(d, skipSteps = false) {
   const out = G('stripOutput');
   const footer = `Callsign ${d.airlineCallsign} / SELCAL ${d.selcal} / SIMBRIEF`;
 
@@ -808,11 +823,13 @@ function buildStrip(d) {
 </div>`;
 
   // Populate initial step climbs from parsed data
-  if (d.steps && d.steps.length) {
-    d.steps.forEach(s => addStepRow(s.wp, s.fl));
-  } else {
-    // Add one blank row
-    addStepRow();
+  // (skipped when we're about to restore saved steps separately)
+  if (!skipSteps) {
+    if (d.steps && d.steps.length) {
+      d.steps.forEach(s => addStepRow(s.wp, s.fl));
+    } else {
+      addStepRow();  // one blank row
+    }
   }
 
   G('copyBtn').style.display  = '';
@@ -1075,6 +1092,19 @@ function esc(s) {
   return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 function G(id) { return document.getElementById(id); }
+
+// ════════════════════════════════════
+//  PWA — register service worker for offline app shell
+// ════════════════════════════════════
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').then(reg => {
+      console.log('[PWA] Service worker registered:', reg.scope);
+    }).catch(err => {
+      console.warn('[PWA] Service worker registration failed:', err);
+    });
+  });
+}
 </script>
 </body>
 </html>
