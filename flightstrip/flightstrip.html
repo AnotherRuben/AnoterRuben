@@ -265,7 +265,7 @@ const ICAO_CALLSIGNS = {'AAA':'Ansett','AAB':'Abg','AAC':'Armyair','AAD':'Sunris
 // Synchronous lookup — instant, no network call needed
 function lookupAirline(icao) {
   if (!icao) return { name: '---', callsign: '---' };
-  const code = icao.toUpperCase();
+  const code = String(icao).toUpperCase();
   if (CUSTOM_AIRLINES[code]) return CUSTOM_AIRLINES[code];
   const cs = ICAO_CALLSIGNS[code];
   if (cs) return { name: cs, callsign: cs };
@@ -407,7 +407,7 @@ window.addEventListener('DOMContentLoaded', () => {
     G('generateBtn').disabled = false;
     log('ok', 'Restored previous strip from browser storage.');
     // Re-resolve airline in case table has been updated
-    if (rawData?.icaoAirline) {
+    if (rawData?.icaoAirline && !rawData.isGA) {
       const info = lookupAirline(rawData.icaoAirline);
       rawData.airlineName     = info.name;
       rawData.airlineCallsign = info.callsign;
@@ -435,15 +435,22 @@ async function fetchSimbrief() {
     const sb = await resp.json();
     if (sb.fetch?.status === 'Error' || !sb.general) throw new Error(sb.fetch?.message || 'No OFP found.');
 
+    console.log('[GA reg check]', { aircraft_reg: sb.aircraft?.reg, general_reg: sb.general?.reg, tail: sb.aircraft?.tail_number });
     rawData = parseSimbriefData(sb);
     G('generateBtn').disabled = false;
     log('ok',`Loaded: ${rawData.callsign} · ${rawData.dep}→${rawData.dest} · ${rawData.acType}`);
     log('warn',`Block: ${rawData.blockTime} · CI${rawData.ci} · FL${rawData.initFl}`);
     // Instant airline lookup from bundled table
-    const airlineInfo = lookupAirline(rawData.icaoAirline);
-    rawData.airlineName     = airlineInfo.name;
-    rawData.airlineCallsign = airlineInfo.callsign;
-    log('ok', `Airline: ${airlineInfo.name} / Callsign: ${airlineInfo.callsign}`);
+    if (rawData.isGA) {
+      rawData.airlineName     = '---';
+      rawData.airlineCallsign = '---';
+      log('ok', `GA flight · Callsign: ${rawData.callsign}`);
+    } else {
+      const airlineInfo = lookupAirline(rawData.icaoAirline);
+      rawData.airlineName     = airlineInfo.name;
+      rawData.airlineCallsign = airlineInfo.callsign;
+      log('ok', `Airline: ${airlineInfo.name} / Callsign: ${airlineInfo.callsign}`);
+    }
   } catch(err) {
     log('err', err.message);
   } finally {
@@ -562,12 +569,29 @@ function parseSimbriefData(sb) {
   const acType = params.aircraft_icao || g.ac_icao || g.aircraft_icao
               || sb.aircraft?.icaocode || sb.aircraft?.name || '---';
 
-  // Callsign & airline — lookup happens async after parse
-  const icaoAirline = (g.icao_airline || '').toUpperCase();
-  const flightNum   = g.flight_number || '';
-  const callsign    = icaoAirline + flightNum || '---';
-  // airlineInfo filled in after async lookup (see fetchSimbrief)
-  const airlineInfo = { name: icaoAirline || '---', callsign: icaoAirline || '---' };
+  // Callsign & airline — GA-aware.
+  // A real airline ICAO is a 3-letter string. If icao_airline isn't that
+  // (SimBrief returns an object/blank for GA/generic flights), treat as GA
+  // and use the aircraft registration as the callsign.
+  const rawIcaoAirline = g.icao_airline;
+  const icaoAirline = (typeof rawIcaoAirline === 'string' && /^[A-Z0-9]{3}$/i.test(rawIcaoAirline.trim()))
+    ? rawIcaoAirline.trim().toUpperCase()
+    : '';
+  const registration = String(sb.aircraft?.reg || g.reg || '').toUpperCase();
+  const flightNum    = String(g.flight_number || '');
+  const isGA = !icaoAirline;
+
+  let callsign;
+  if (isGA) {
+    // GA: registration without the dash (PH-FAR -> PHFAR)
+    callsign = registration.replace(/-/g, '') || flightNum || '---';
+  } else {
+    callsign = icaoAirline + flightNum || '---';
+  }
+  // airlineInfo filled in after lookup (see fetchSimbrief). GA has no airline.
+  const airlineInfo = isGA
+    ? { name: '---', callsign: '---' }
+    : { name: icaoAirline || '---', callsign: icaoAirline || '---' };
 
   // SELCAL — try to get from SimBrief, otherwise generate
   // Coerce to string first — SimBrief can return selcal as an object/array
@@ -591,7 +615,7 @@ function parseSimbriefData(sb) {
     altn: altnIcao, ci: g.costindex || '---',
     initFl, steps,
     airlineName: airlineInfo.name, airlineCallsign: airlineInfo.callsign,
-    icaoAirline, selcal,
+    icaoAirline, isGA, registration, selcal,
   };
 }
 
@@ -669,7 +693,7 @@ G('generateBtn').addEventListener('click', () => {
 // ════════════════════════════════════
 function buildStrip(d, skipSteps = false) {
   const out = G('stripOutput');
-  const footer = `Callsign ${d.airlineCallsign} / SELCAL ${d.selcal} / SIMBRIEF`;
+  const footer = `Callsign ${d.isGA ? '---' : d.airlineCallsign} / SELCAL ${d.selcal} / SIMBRIEF`;
 
   out.innerHTML = `
 <div class="strip-card" id="stripCard">
@@ -683,7 +707,7 @@ function buildStrip(d, skipSteps = false) {
     <span class="strip-label">| Route</span>
     <span class="strip-static">${esc(d.dep)} &#8594; ${esc(d.dest)}</span>
     <span class="strip-label">|</span>
-    <span class="strip-static" style="color:var(--muted)">${esc(d.airlineName)}</span>
+    <span class="strip-static" style="color:var(--muted)">${d.isGA ? 'GA' : esc(d.airlineName)}</span>
   </div>
 
   <hr class="strip-sep">
@@ -887,10 +911,10 @@ function copyStrip() {
     .map(s => `  ${s.wp.padEnd(16)} ${s.fl}`)
     .join('\n') || '  (none)';
 
-  const footer = `Callsign ${d.airlineCallsign} / SELCAL ${get('fSelcal')} / SIMBRIEF`;
+  const footer = `Callsign ${d.isGA ? '---' : d.airlineCallsign} / SELCAL ${get('fSelcal')} / SIMBRIEF`;
 
   const txt = [
-    `| Flight ${d.callsign} | Type ${d.acType} | Route ${d.dep} - ${d.dest} | ${d.airlineName}`,
+    `| Flight ${d.callsign} | Type ${d.acType} | Route ${d.dep} - ${d.dest} | ${d.isGA ? 'GA' : d.airlineName}`,
     '',SEP,
     `ZFW: ${fmtWt(d.zfwKg)}    BLOCK: ${fmtWt(d.blockKg)}    LWT: ${fmtWt(d.lawKg)}    RSV: ${fmtWt(d.reserveKg)}`,
     `P/C: ${d.pax}/${fmtWtShort(d.cargoKg)}    CI/M: ${d.ci}    BLOCK: ${d.blockTime}    INIT ALT: ${get('fInitAlt')}`,
