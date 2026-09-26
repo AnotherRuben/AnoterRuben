@@ -266,7 +266,7 @@
   .nt-reason.affects { color: var(--nt-affects); }
   .nt-reason.change { color: var(--nt-change); }
   .nt-reason.lo { color: var(--muted); border-color: var(--border); }
-  .nt-card-body { font-family: 'Share Tech Mono', monospace; font-size: 10pt; line-height: 1.55; white-space: pre-wrap; color: var(--text); max-height: 6.6em; overflow: hidden; position: relative; }
+  .nt-card-body { font-family: 'Share Tech Mono', monospace; font-size: 10pt; line-height: 1.55; white-space: pre-wrap; color: var(--text); max-height: 9.3em; overflow: hidden; position: relative; }
   .nt-card-body.expanded { max-height: none; }
   .nt-fade { position: absolute; left: 0; right: 0; bottom: 0; height: 2em; background: linear-gradient(to bottom, transparent, var(--panel)); }
   .nt-card-body.expanded + .nt-fade { display: none; }
@@ -280,6 +280,40 @@
   .nt-paste-fallback summary { cursor: pointer; color: var(--muted); font-family: 'Barlow Condensed', sans-serif; font-size: 10pt; user-select: none; }
   .nt-paste-fallback summary:hover { color: var(--text); }
   .nt-paste-fallback[open] summary { color: var(--text); margin-bottom: 4px; }
+
+  /* ══════════════════════════════════════
+     T/O · LDG PERFORMANCE VIEW (perf- prefix)
+     ══════════════════════════════════════ */
+  #viewPerf { display: none; padding: 26px 30px; max-width: 900px; margin: 0 auto; }
+
+  .perf-card { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; margin-top: 20px; }
+  .perf-card-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+  .perf-card-head h3 { font-family: 'Barlow Condensed', sans-serif; font-size: 15px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; margin: 0; }
+  .perf-card-head .icao { font-family: 'Share Tech Mono', monospace; font-size: 13px; color: var(--muted); }
+
+  .perf-conditions { display: flex; flex-wrap: wrap; gap: 14px; font-size: 11px; font-family: 'Barlow Condensed', sans-serif; color: var(--muted); margin-bottom: 14px; }
+  .perf-conditions b { color: var(--text); font-weight: 600; }
+
+  .perf-rwy-row { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+  .perf-rwy-row label { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); font-family: 'Barlow Condensed', sans-serif; }
+  .perf-rwy-select { background: var(--field-bg); border: 1px solid var(--field-border); color: var(--accent2); border-radius: 5px; padding: 6px 10px; font-family: 'Share Tech Mono', monospace; font-size: 13px; font-weight: 700; outline: none; }
+  .perf-rwy-select:focus { border-color: var(--accent2); }
+  .perf-limit-tag { font-size: 10px; padding: 3px 9px; border-radius: 4px; border: 1px solid var(--border); color: var(--muted); font-family: 'Barlow Condensed', sans-serif; }
+  .perf-limit-tag.warn { color: var(--danger); border-color: var(--danger); }
+
+  .perf-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); gap: 10px; margin-bottom: 14px; }
+  .perf-stat { background: var(--bg); border: 1px solid var(--border); border-radius: 7px; padding: 9px 10px; }
+  .perf-stat .lbl { font-size: 9px; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); font-family: 'Barlow Condensed', sans-serif; display: block; margin-bottom: 3px; }
+  .perf-stat .val { font-family: 'Share Tech Mono', monospace; font-size: 16px; font-weight: 700; color: var(--text); }
+  .perf-stat.hi .val { color: var(--accent); }
+
+  .perf-subhead { font-family: 'Barlow Condensed', sans-serif; font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); margin: 14px 0 8px; }
+
+  .perf-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+  .perf-table th, .perf-table td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); font-family: 'Share Tech Mono', monospace; }
+  .perf-table th { color: var(--muted); font-family: 'Barlow Condensed', sans-serif; font-size: 10px; letter-spacing: 1px; text-transform: uppercase; font-weight: 600; }
+  .perf-table td.current { color: var(--accent); font-weight: 700; }
+  .perf-table tr.selected td { background: color-mix(in srgb, var(--accent) 8%, transparent); }
 
   @media (max-width: 960px) {
     main { grid-template-columns: 1fr; }
@@ -299,6 +333,7 @@
 <div class="view-tabs">
   <button class="view-tab active" id="viewTabStrip" onclick="switchView('strip')">Flight Strip</button>
   <button class="view-tab" id="viewTabNotam" onclick="switchView('notam')">NOTAMs</button>
+  <button class="view-tab" id="viewTabPerf" onclick="switchView('perf')">T/O &middot; LDG</button>
 </div>
 
 <main id="viewStrip">
@@ -411,6 +446,16 @@
       <span class="nt-hint">Nothing is uploaded — this runs entirely in your browser.</span>
     </div>
   </details>
+</div>
+
+<!-- ═══════ T/O · LDG PERFORMANCE VIEW ═══════ -->
+<div id="viewPerf">
+  <div class="nt-intro">Real V-speeds, flap/thrust settings and runway-specific distances, pulled straight from SimBrief's own Takeoff/Landing Report &mdash; not estimated by this app. Only available if the Performance Tool was run when the OFP was generated. Pick a different runway below if the one you'll actually use differs from what was planned.</div>
+  <div class="nt-source-line" id="perfSourceLine"></div>
+  <div class="nt-error" id="perfErrorBox"></div>
+
+  <div id="perfTakeoff"></div>
+  <div id="perfLanding"></div>
 </div>
 
 <script>
@@ -624,6 +669,7 @@ window.addEventListener('DOMContentLoaded', async () => {
       rawData.airlineCallsign = info.callsign;
     }
     if (typeof ntLoadFromApi === 'function') ntLoadFromApi();
+    if (typeof perfLoadFromApi === 'function') perfLoadFromApi();
   }
 });
 
@@ -663,7 +709,10 @@ async function fetchSimbrief() {
       log('ok', `Airline: ${airlineInfo.name} / Callsign: ${airlineInfo.callsign}`);
     }
     log('ok', rawData.notams.length ? `${rawData.notams.length} NOTAMs available in this OFP.` : 'No NOTAMs in this OFP (enable "Include NOTAMs" in SimBrief to get them).');
+    log('ok', rawData.tlr ? 'Takeoff/Landing performance data available in this OFP.' : 'No performance data in this OFP (run the Performance Tool on SimBrief to get it).');
     ntLoadFromApi();
+    perfState.selectedToRwy = null; perfState.selectedLdgRwy = null; // fresh flight — re-pick defaults
+    perfLoadFromApi();
   } catch(err) {
     log('err', err.message);
   } finally {
@@ -845,13 +894,22 @@ function parseSimbriefData(sb) {
     expire: n.notam_expire_dtg || '',
   })).filter(n => n.id && n.text) : [];
 
+  // Takeoff/Landing Report — real, aircraft-specific performance numbers
+  // (V-speeds, flap/thrust settings, accelerate-stop distances, per-runway
+  // max landing weight) computed by SimBrief's own Performance Tool. Only
+  // present if that tool was run when the OFP was generated. Confirmed
+  // shape: sb.tlr.takeoff.{conditions, runway[]}, sb.tlr.landing.{conditions,
+  // distance_dry, distance_wet, runway[]}. Stored as-is — already a clean
+  // structure, no need to reshape it.
+  const tlr = (sb.tlr && (sb.tlr.takeoff || sb.tlr.landing)) ? sb.tlr : null;
+
   return {
     callsign, flightNum, acType, dep: org.icao_code || '---', dest: dst.icao_code || '---',
     weightUnit, zfwKg, lawKg, blockKg, reserveKg, reserveParts, pax, cargoKg,
     blockTime, timeOut, timeOff, timeOn, timeIn,
     route: routeClean, depRwy, sid, star,
     altn: altnIcao, ci: g.costindex || '---',
-    initFl, steps, notams,
+    initFl, steps, notams, tlr,
     airlineName: airlineInfo.name, airlineCallsign: airlineInfo.callsign,
     icaoAirline, isGA, registration, selcal,
   };
@@ -1223,6 +1281,8 @@ function clearAll() {
   G('copyBtn').style.display  = 'none';
   G('printBtn').style.display = 'none';
   if (typeof ntReset === 'function') ntReset();
+  if (typeof perfState !== 'undefined') { perfState.selectedToRwy = null; perfState.selectedLdgRwy = null; }
+  if (typeof perfLoadFromApi === 'function') perfLoadFromApi();
   log('warn','Cleared.');
 }
 
@@ -1395,14 +1455,16 @@ function toggleTheme() {
 //  VIEW SWITCH (Flight Strip / NOTAMs)
 // ════════════════════════════════════
 function switchView(view) {
-  const isStrip = view === 'strip';
-  G('viewStrip').style.display = isStrip ? '' : 'none';
-  G('viewNotam').style.display = isStrip ? 'none' : 'block';
-  G('viewTabStrip').classList.toggle('active', isStrip);
-  G('viewTabNotam').classList.toggle('active', !isStrip);
+  G('viewStrip').style.display = view === 'strip' ? '' : 'none';
+  G('viewNotam').style.display = view === 'notam' ? 'block' : 'none';
+  G('viewPerf').style.display  = view === 'perf'  ? 'block' : 'none';
+  G('viewTabStrip').classList.toggle('active', view === 'strip');
+  G('viewTabNotam').classList.toggle('active', view === 'notam');
+  G('viewTabPerf').classList.toggle('active', view === 'perf');
   savePref('activeView', view);
-  // Lazy-load NOTAMs the first time the tab is opened
-  if (!isStrip && ntState.records.length === 0 && typeof ntLoadFromApi === 'function') ntLoadFromApi();
+  // Lazy-load on first visit to each tab
+  if (view === 'notam' && ntState.records.length === 0 && typeof ntLoadFromApi === 'function') ntLoadFromApi();
+  if (view === 'perf' && typeof perfLoadFromApi === 'function') perfLoadFromApi();
 }
 
 // ════════════════════════════════════
@@ -1938,12 +2000,26 @@ function ntRenderResults() {
     container.appendChild(section);
   });
 
-  Array.prototype.forEach.call(container.querySelectorAll('.nt-expand-btn'), btn => {
-    btn.addEventListener('click', () => {
-      const body = btn.parentElement.querySelector('.nt-card-body');
-      const expanded = body.classList.toggle('expanded');
-      btn.textContent = expanded ? 'Show less' : 'Show full text';
-    });
+  Array.prototype.forEach.call(container.querySelectorAll('.nt-card'), card => {
+    const body = card.querySelector('.nt-card-body');
+    const fade = card.querySelector('.nt-fade');
+    const btn  = card.querySelector('.nt-expand-btn');
+    if (!body) return;
+    // Only show the fade + "Show full text" control when the NOTAM's text
+    // actually exceeds the preview height — otherwise short NOTAMs (a
+    // handful of A)/B)/C)/D) lines, say) were getting clipped mid-line by
+    // the fixed max-height even though they'd have fit just fine.
+    if (body.scrollHeight <= body.clientHeight + 1) {
+      if (fade) fade.style.display = 'none';
+      if (btn)  btn.style.display = 'none';
+      return;
+    }
+    if (btn) {
+      btn.addEventListener('click', () => {
+        const expanded = body.classList.toggle('expanded');
+        btn.textContent = expanded ? 'Show less' : 'Show full text';
+      });
+    }
   });
 }
 
@@ -1978,6 +2054,253 @@ try {
   const savedNotam = localStorage.getItem('flightstrip_notam_lastinput');
   if (savedNotam) G('ntInput').value = savedNotam;
 } catch(e) {}
+
+// ════════════════════════════════════
+//  T/O · LDG PERFORMANCE
+//  Real V-speeds, flap/thrust settings and runway-specific accelerate-
+//  stop/landing-distance data, pulled straight from SimBrief's own
+//  Takeoff/Landing Report (rawData.tlr) — never computed by this app.
+//  Only present if SimBrief's Performance Tool was run for the OFP.
+// ════════════════════════════════════
+const perfState = { selectedToRwy: null, selectedLdgRwy: null };
+
+function perfFmtWeight(v) {
+  const n = Number(v);
+  if (v == null || v === '' || isNaN(n)) return '---';
+  return n.toLocaleString() + ' ' + (rawData?.weightUnit || 'KG');
+}
+function perfFmtDist(v) {
+  const n = Number(v);
+  if (v == null || v === '' || isNaN(n)) return '---';
+  return n.toLocaleString() + ' ft';
+}
+function perfFmtNum(v, suffix) {
+  if (v == null || v === '' || typeof v === 'object') return '---';
+  return v + (suffix || '');
+}
+
+// Prefer the flight strip's own (possibly pilot-edited) RWY field when it
+// matches one of the runways SimBrief computed data for; otherwise fall
+// back to whatever runway was planned.
+function perfPickDefaultRwy(runways, plannedId) {
+  const stripRwy = (G('fRwy') && G('fRwy').value.trim().toUpperCase()) || '';
+  if (stripRwy && runways.some(r => r.identifier.toUpperCase() === stripRwy)) return stripRwy;
+  if (plannedId && runways.some(r => r.identifier.toUpperCase() === String(plannedId).toUpperCase())) {
+    return String(plannedId).toUpperCase();
+  }
+  return runways[0]?.identifier || '';
+}
+
+// ── Staleness check: compare SimBrief's baked-in TLR conditions against
+// the live METAR already fetched for that airport (if any). SimBrief only
+// computes V-speeds/distances once, using whatever wind/surface was current
+// when the Performance Tool ran — if conditions have since moved on, the
+// numbers on screen are stale. We flag that rather than trying to
+// recompute anything ourselves (that needs the same proprietary aircraft
+// performance model SimBrief uses).
+function perfExtractMetarLine(fieldId) {
+  const el = G(fieldId);
+  if (!el) return '';
+  const val = el.value || '';
+  const idx = val.indexOf(WX_NOTES_DELIM);
+  const weatherPart = (idx !== -1 ? val.slice(0, idx) : val).trim();
+  return weatherPart.split('\n')[0].trim(); // METAR is the first line of the auto-fetched block
+}
+function perfParseWind(metarLine) {
+  const m = (metarLine || '').match(/\b(\d{3}|VRB)(\d{2,3})(?:G\d{2,3})?(KT|MPS)\b/);
+  if (!m) return null;
+  const variable = m[1] === 'VRB';
+  const dir = variable ? null : parseInt(m[1], 10);
+  let speed = parseInt(m[2], 10);
+  if (m[3] === 'MPS') speed = Math.round(speed * 1.94384);
+  return { dir, speed, variable };
+}
+function perfParseWetHint(metarLine) {
+  return /\b(RA|SHRA|TSRA|DZ|FZRA|FZDZ|SN|SHSN|TSSN|GS|GR|PL)\b/.test((metarLine || '').toUpperCase());
+}
+// Maps a TLR airport ICAO to the flight strip's weather field for it, so
+// we know which already-fetched METAR to compare against.
+function perfWxFieldForIcao(icao) {
+  if (!rawData || !icao) return null;
+  if (icao === rawData.dep)  return 'fDepWx';
+  if (icao === rawData.dest) return 'fArrWx';
+  if (icao === rawData.altn) return 'fAltWx';
+  return null;
+}
+// Returns an HTML string for the staleness banner, or '' if there's nothing
+// live to compare against (weather not fetched yet for that airport).
+function perfStalenessHtml(c, fieldId) {
+  if (!fieldId) return '';
+  const live = perfExtractMetarLine(fieldId);
+  if (!live) return '';
+  const liveWind = perfParseWind(live);
+  if (!liveWind) return '';
+
+  const plannedDir = parseInt(c.wind_direction, 10);
+  const plannedSpeed = parseInt(c.wind_speed, 10);
+  const plannedWet = String(c.surface_condition || '').toLowerCase() !== 'dry';
+  const liveWet = perfParseWetHint(live);
+
+  let dirDiff = null;
+  if (!liveWind.variable && !isNaN(plannedDir)) {
+    dirDiff = Math.min(Math.abs(plannedDir - liveWind.dir), 360 - Math.abs(plannedDir - liveWind.dir));
+  }
+  const speedDiff = !isNaN(plannedSpeed) ? Math.abs(plannedSpeed - liveWind.speed) : null;
+  const windChanged = (dirDiff !== null && dirDiff > 30) || (speedDiff !== null && speedDiff > 8) || (liveWind.variable && !isNaN(plannedDir));
+  const surfaceChanged = plannedWet !== liveWet;
+  const changed = windChanged || surfaceChanged;
+
+  const liveWindTxt = liveWind.variable ? ('VRB/' + liveWind.speed + 'kt') : (liveWind.dir + '\u00b0/' + liveWind.speed + 'kt');
+  const plannedWindTxt = (isNaN(plannedDir) ? '--' : plannedDir) + '\u00b0/' + (isNaN(plannedSpeed) ? '--' : plannedSpeed) + 'kt';
+
+  if (!changed) {
+    return '<div style="font-size:11px;color:var(--muted);margin-bottom:12px">&#10003; Live METAR (' + esc(liveWindTxt) + ', ' + (liveWet ? 'wet' : 'dry') + ') is close to what these numbers were computed for.</div>';
+  }
+  return '<div style="font-size:11px;color:var(--nt-hi);border:1px solid var(--nt-hi);border-radius:6px;padding:8px 10px;margin-bottom:12px">' +
+    '&#9888; Live METAR (' + esc(liveWindTxt) + ', ' + (liveWet ? 'wet' : 'dry') + ') differs from what was planned (' + esc(plannedWindTxt) + ', ' + (plannedWet ? 'wet' : 'dry') + '). ' +
+    'These numbers may be stale &mdash; re-run SimBrief\u2019s Performance Tool for current conditions.</div>';
+}
+
+function perfLoadFromApi() {
+  const errorBox = G('perfErrorBox');
+  errorBox.style.display = 'none';
+  G('perfTakeoff').innerHTML = '';
+  G('perfLanding').innerHTML = '';
+
+  if (!rawData) {
+    G('perfSourceLine').innerHTML = '';
+    return;
+  }
+  const tlr = rawData.tlr;
+  if (!tlr) {
+    G('perfSourceLine').innerHTML = '<span class="dot" style="background:var(--muted)"></span>No performance data in this OFP.';
+    errorBox.textContent = 'This OFP has no Takeoff/Landing Report. Run the Performance Tool (Performance & Tools \u2192 Takeoff and Landing Calculator) on SimBrief, then re-fetch.';
+    errorBox.style.display = 'block';
+    return;
+  }
+
+  G('perfSourceLine').innerHTML = '<span class="dot" style="background:var(--accent)"></span>Performance data loaded from SimBrief';
+
+  if (tlr.takeoff && Array.isArray(tlr.takeoff.runway) && tlr.takeoff.runway.length) {
+    perfRenderTakeoff(tlr.takeoff);
+  }
+  if (tlr.landing && Array.isArray(tlr.landing.runway) && tlr.landing.runway.length) {
+    perfRenderLanding(tlr.landing);
+  }
+}
+
+function perfRenderTakeoff(to) {
+  const c = to.conditions || {};
+  const runways = to.runway || [];
+  if (!perfState.selectedToRwy || !runways.some(r => r.identifier === perfState.selectedToRwy)) {
+    perfState.selectedToRwy = perfPickDefaultRwy(runways, c.planned_runway);
+  }
+  const sel = runways.find(r => r.identifier === perfState.selectedToRwy) || runways[0];
+  const optionsHtml = runways.map(r =>
+    '<option value="'+esc(r.identifier)+'"'+(r.identifier===perfState.selectedToRwy?' selected':'')+'>RWY '+esc(r.identifier)+'</option>'
+  ).join('');
+  const flexPart = (sel.flex_temperature && !isNaN(Number(sel.flex_temperature))) ? (' / FLEX '+sel.flex_temperature+'\u00b0C') : '';
+  const stalenessHtml = perfStalenessHtml(c, perfWxFieldForIcao(c.airport_icao));
+
+  G('perfTakeoff').innerHTML =
+    '<div class="perf-card">'+
+      '<div class="perf-card-head"><h3>Takeoff</h3><span class="icao">'+esc(c.airport_icao||'')+'</span></div>'+
+      '<div class="perf-conditions">'+
+        '<span>Wind <b>'+esc(c.wind_direction||'--')+'&deg;/'+esc(c.wind_speed||'--')+'kt</b></span>'+
+        '<span>Temp <b>'+esc(c.temperature||'--')+'&deg;C</b></span>'+
+        '<span>QNH <b>'+esc(c.altimeter||'--')+'</b></span>'+
+        '<span>Surface <b>'+esc(String(c.surface_condition||'--').toUpperCase())+'</b></span>'+
+      '</div>'+
+      stalenessHtml+
+      '<div class="perf-rwy-row">'+
+        '<label>Runway</label>'+
+        '<select class="perf-rwy-select" onchange="perfState.selectedToRwy=this.value; perfRenderTakeoff(rawData.tlr.takeoff);">'+optionsHtml+'</select>'+
+        '<span class="perf-limit-tag">LIMIT: '+esc(sel.limit_code||'--')+'</span>'+
+        '<span style="margin-left:auto;font-size:11px;color:var(--muted)">Head/X-wind: '+esc(sel.headwind_component||'0')+'/'+esc(sel.crosswind_component||'0')+' kt</span>'+
+      '</div>'+
+      '<div class="perf-grid">'+
+        '<div class="perf-stat hi"><span class="lbl">V1</span><span class="val">'+perfFmtNum(sel.speeds_v1)+'</span></div>'+
+        '<div class="perf-stat hi"><span class="lbl">VR</span><span class="val">'+perfFmtNum(sel.speeds_vr)+'</span></div>'+
+        '<div class="perf-stat hi"><span class="lbl">V2</span><span class="val">'+perfFmtNum(sel.speeds_v2)+'</span></div>'+
+        '<div class="perf-stat"><span class="lbl">'+esc(sel.speeds_other_id||'VFS')+'</span><span class="val">'+perfFmtNum(sel.speeds_other)+'</span></div>'+
+        '<div class="perf-stat"><span class="lbl">Flap</span><span class="val">'+perfFmtNum(sel.flap_setting)+'</span></div>'+
+        '<div class="perf-stat"><span class="lbl">Thrust</span><span class="val" style="font-size:12px">'+esc((sel.thrust_setting||'--')+flexPart)+'</span></div>'+
+        '<div class="perf-stat"><span class="lbl">Max Wt</span><span class="val" style="font-size:13px">'+perfFmtWeight(sel.max_weight)+'</span></div>'+
+      '</div>'+
+      '<div class="perf-subhead">Distances &mdash; runway length '+perfFmtDist(sel.length)+'</div>'+
+      '<div class="perf-grid">'+
+        '<div class="perf-stat"><span class="lbl">V1 Point</span><span class="val" style="font-size:13px">'+perfFmtDist(sel.distance_decide)+'</span></div>'+
+        '<div class="perf-stat"><span class="lbl">Reject Dist</span><span class="val" style="font-size:13px">'+perfFmtDist(sel.distance_reject)+'</span></div>'+
+        '<div class="perf-stat"><span class="lbl">Continue Dist</span><span class="val" style="font-size:13px">'+perfFmtDist(sel.distance_continue)+'</span></div>'+
+        '<div class="perf-stat"><span class="lbl">Margin</span><span class="val" style="font-size:13px">'+perfFmtDist(sel.distance_margin)+'</span></div>'+
+      '</div>'+
+      '<div class="perf-subhead">All runways at '+esc(c.airport_icao||'')+'</div>'+
+      '<table class="perf-table">'+
+        '<tr><th>Rwy</th><th>Len</th><th>V1/VR/V2</th><th>Flap</th><th>Max Wt</th><th>Limit</th></tr>'+
+        runways.map(r =>
+          '<tr class="'+(r.identifier===perfState.selectedToRwy?'selected':'')+'">'+
+            '<td class="'+(r.identifier===perfState.selectedToRwy?'current':'')+'">'+esc(r.identifier)+'</td>'+
+            '<td>'+perfFmtDist(r.length)+'</td>'+
+            '<td>'+perfFmtNum(r.speeds_v1)+'/'+perfFmtNum(r.speeds_vr)+'/'+perfFmtNum(r.speeds_v2)+'</td>'+
+            '<td>'+perfFmtNum(r.flap_setting)+'</td>'+
+            '<td>'+perfFmtWeight(r.max_weight)+'</td>'+
+            '<td>'+esc(r.limit_code||'--')+'</td>'+
+          '</tr>'
+        ).join('')+
+      '</table>'+
+    '</div>';
+}
+
+function perfRenderLanding(ld) {
+  const c = ld.conditions || {};
+  const runways = ld.runway || [];
+  if (!perfState.selectedLdgRwy || !runways.some(r => r.identifier === perfState.selectedLdgRwy)) {
+    perfState.selectedLdgRwy = perfPickDefaultRwy(runways, c.planned_runway);
+  }
+  const sel = runways.find(r => r.identifier === perfState.selectedLdgRwy) || runways[0];
+  const optionsHtml = runways.map(r =>
+    '<option value="'+esc(r.identifier)+'"'+(r.identifier===perfState.selectedLdgRwy?' selected':'')+'>RWY '+esc(r.identifier)+'</option>'
+  ).join('');
+  const dry = ld.distance_dry || {};
+  const wet = ld.distance_wet || {};
+  const stalenessHtml = perfStalenessHtml(c, perfWxFieldForIcao(c.airport_icao));
+
+  G('perfLanding').innerHTML =
+    '<div class="perf-card">'+
+      '<div class="perf-card-head"><h3>Landing</h3><span class="icao">'+esc(c.airport_icao||'')+'</span></div>'+
+      '<div class="perf-conditions">'+
+        '<span>Wind <b>'+esc(c.wind_direction||'--')+'&deg;/'+esc(c.wind_speed||'--')+'kt</b></span>'+
+        '<span>Temp <b>'+esc(c.temperature||'--')+'&deg;C</b></span>'+
+        '<span>QNH <b>'+esc(c.altimeter||'--')+'</b></span>'+
+        '<span>Planned surface <b>'+esc(String(c.surface_condition||'--').toUpperCase())+'</b></span>'+
+      '</div>'+
+      stalenessHtml+
+      '<div class="perf-subhead">Landing distance required</div>'+
+      '<div class="perf-grid" style="grid-template-columns:repeat(2,1fr)">'+
+        '<div class="perf-stat"><span class="lbl">Dry &mdash; VREF '+perfFmtNum(dry.speeds_vref,'kt')+' &middot; '+esc(dry.flap_setting||'')+' &middot; '+esc(dry.brake_setting||'')+'</span>'+
+          '<span class="val" style="font-size:14px">'+perfFmtDist(dry.actual_distance)+' <span style="font-size:11px;color:var(--muted)">(factored '+perfFmtDist(dry.factored_distance)+')</span></span></div>'+
+        '<div class="perf-stat"><span class="lbl">Wet &mdash; VREF '+perfFmtNum(wet.speeds_vref,'kt')+' &middot; '+esc(wet.flap_setting||'')+' &middot; '+esc(wet.brake_setting||'')+'</span>'+
+          '<span class="val" style="font-size:14px">'+perfFmtDist(wet.actual_distance)+' <span style="font-size:11px;color:var(--muted)">(factored '+perfFmtDist(wet.factored_distance)+')</span></span></div>'+
+      '</div>'+
+      '<div class="perf-rwy-row">'+
+        '<label>Runway</label>'+
+        '<select class="perf-rwy-select" onchange="perfState.selectedLdgRwy=this.value; perfRenderLanding(rawData.tlr.landing);">'+optionsHtml+'</select>'+
+        '<span style="margin-left:auto;font-size:11px;color:var(--muted)">Head/X-wind: '+esc(sel.headwind_component||'0')+'/'+esc(sel.crosswind_component||'0')+' kt</span>'+
+      '</div>'+
+      '<div class="perf-subhead">Max landing weight by runway at '+esc(c.airport_icao||'')+'</div>'+
+      '<table class="perf-table">'+
+        '<tr><th>Rwy</th><th>Len</th><th>Max Wt (Dry)</th><th>Max Wt (Wet)</th></tr>'+
+        runways.map(r =>
+          '<tr class="'+(r.identifier===perfState.selectedLdgRwy?'selected':'')+'">'+
+            '<td class="'+(r.identifier===perfState.selectedLdgRwy?'current':'')+'">'+esc(r.identifier)+'</td>'+
+            '<td>'+perfFmtDist(r.length)+'</td>'+
+            '<td>'+perfFmtWeight(r.max_weight_dry)+'</td>'+
+            '<td>'+perfFmtWeight(r.max_weight_wet)+'</td>'+
+          '</tr>'
+        ).join('')+
+      '</table>'+
+    '</div>';
+}
 
 
 
